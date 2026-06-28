@@ -3603,7 +3603,7 @@ static void guc_context_sched_disable(struct intel_context *ce)
 	} else if (!intel_context_is_closed(ce) && !guc_id_pressure(guc, ce) &&
 		   delay) {
 		spin_unlock_irqrestore(&ce->guc_state.lock, flags);
-		mod_delayed_work(system_unbound_wq,
+		mod_delayed_work(system_dfl_wq,
 				 &ce->guc_state.sched_disable_delay_work,
 				 msecs_to_jiffies(delay));
 	} else {
@@ -3829,7 +3829,7 @@ static void guc_context_destroy(struct kref *kref)
 	 * take the GT PM for the first time which isn't allowed from an atomic
 	 * context.
 	 */
-	queue_work(system_unbound_wq, &guc->submission_state.destroyed_worker);
+	queue_work(system_dfl_wq, &guc->submission_state.destroyed_worker);
 }
 
 static int guc_context_alloc(struct intel_context *ce)
@@ -4632,9 +4632,9 @@ static void start_engine(struct intel_engine_cs *engine)
 {
 	ENGINE_WRITE_FW(engine,
 			RING_MODE_GEN7,
-			_MASKED_BIT_ENABLE(GEN11_GFX_DISABLE_LEGACY_MODE));
+			REG_MASKED_FIELD_ENABLE(GEN11_GFX_DISABLE_LEGACY_MODE));
 
-	ENGINE_WRITE_FW(engine, RING_MI_MODE, _MASKED_BIT_DISABLE(STOP_RING));
+	ENGINE_WRITE_FW(engine, RING_MI_MODE, REG_MASKED_FIELD_DISABLE(STOP_RING));
 	ENGINE_POSTING_READ(engine, RING_MI_MODE);
 }
 
@@ -4799,8 +4799,7 @@ static void guc_default_vfuncs(struct intel_engine_cs *engine)
 
 	/* Wa_16019325821 */
 	/* Wa_14019159160 */
-	if (engine->i915->params.enable_mtl_rcs_ccs_wa &&
-	    (engine->class == COMPUTE_CLASS || engine->class == RENDER_CLASS) &&
+	if ((engine->class == COMPUTE_CLASS || engine->class == RENDER_CLASS) &&
 	    IS_GFX_GT_IP_RANGE(engine->gt, IP_VER(12, 70), IP_VER(12, 74)))
 		engine->flags |= I915_ENGINE_USES_WA_HOLD_SWITCHOUT;
 
@@ -5617,7 +5616,7 @@ int intel_guc_engine_failure_process_msg(struct intel_guc *guc,
 	 * A GT reset flushes this worker queue (G2H handler) so we must use
 	 * another worker to trigger a GT reset.
 	 */
-	queue_work(system_unbound_wq, &guc->submission_state.reset_fail_worker);
+	queue_work(system_dfl_wq, &guc->submission_state.reset_fail_worker);
 
 	return 0;
 }

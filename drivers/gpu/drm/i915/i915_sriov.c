@@ -4,6 +4,7 @@
  */
 
 #include <drm/i915_sriov.h>
+#include <drm/intel/intel_gmd_interrupt_regs.h>
 
 #include "i915_sriov.h"
 #include "i915_sriov_sysfs.h"
