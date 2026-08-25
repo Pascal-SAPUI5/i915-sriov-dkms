@@ -207,6 +207,47 @@
 #define CONFIG_DRM_XE_PREEMPT_TIMEOUT_MAX 10000000
 #endif
 
+/*
+ * Linux 7.2: the DRM atomic core renamed struct drm_atomic_state to
+ * struct drm_atomic_commit, together with every drm_atomic_state_* helper
+ * (alloc/init/clear/get/put and the two default_* callbacks). The kernel
+ * documents this as an in-progress transition and calls the commit form the
+ * preferred one; the old names are gone entirely, there is no compat alias.
+ * Pure rename with identical semantics -> global #define (class 2), so the
+ * i915/xe tree vendored from 7.0 stays untouched. It has to live in the
+ * -include config rather than a header shim because struct FIELDS
+ * (struct drm_atomic_state base;) appear in early-included display headers,
+ * not just at later use sites.
+ * Token-based replacement: <drm/drm_atomic_state_helper.h> keeps its name
+ * (different token, and #include <...> is not macro-expanded anyway).
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)
+#define drm_atomic_state                 drm_atomic_commit
+#define drm_atomic_state_alloc           drm_atomic_commit_alloc
+#define drm_atomic_state_init            drm_atomic_commit_init
+#define drm_atomic_state_clear           drm_atomic_commit_clear
+#define drm_atomic_state_get             drm_atomic_commit_get
+#define drm_atomic_state_put             drm_atomic_commit_put
+#define drm_atomic_state_default_clear   drm_atomic_commit_default_clear
+#define drm_atomic_state_default_release drm_atomic_commit_default_release
+#endif
+
+/*
+ * Linux 7.2: the two AS-SDP (Adaptive-Sync Secondary Data Packet) header
+ * bitmasks in <drm/display/drm_dp.h> were renamed to match the DP_AS_SDP_*
+ * family that already existed around them:
+ *   DP_ADAPTIVE_SYNC_SDP_OPERATION_MODE -> DP_AS_SDP_OPERATION_MODE_MASK
+ *   DP_ADAPTIVE_SYNC_SDP_LENGTH         -> DP_AS_SDP_LENGTH_MASK
+ * Values are unchanged (GENMASK(1, 0) and GENMASK(5, 0), verified against
+ * 7.1.7) -> pure rename, global #define (class 2), intel_dp.c stays vendored.
+ * Not to be confused with DP_ADAPTIVE_SYNC_SDP_SUPPORTED, a DPCD feature bit
+ * at 0x2214 that keeps its name.
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)
+#define DP_ADAPTIVE_SYNC_SDP_OPERATION_MODE DP_AS_SDP_OPERATION_MODE_MASK
+#define DP_ADAPTIVE_SYNC_SDP_LENGTH         DP_AS_SDP_LENGTH_MASK
+#endif
+
 #ifndef CONFIG_DRM_XE_PREEMPT_TIMEOUT_MIN
 #define CONFIG_DRM_XE_PREEMPT_TIMEOUT_MIN 1
 #endif
